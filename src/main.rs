@@ -1,126 +1,147 @@
-use std::fmt::format;
-use std::process::Command;
+mod image_to_tiles;
+mod repo_manager;
+
+use crate::image_to_tiles::generate_commit_dates;
+use crate::repo_manager::RepoManager;
 use colored::Colorize;
-use num_integer::Roots;
 use image::ImageReader;
-use dotenv::dotenv;
+use image_to_tiles::convert_image_to_tiles;
+use log::{error, info, warn};
+use num_integer::Roots;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::path::Path;
+use std::process::{Child, Command, Stdio};
+use std::thread::sleep;
+use std::time::Duration;
+/*
+This program gets executed when you want to update the image:
+
+start:
+
+- if not file exists $repo_folder/sha.txt
+    then:
+        rm -fr $repo_folder
+        clone git@github:$github_username/$repo_name.git
+
+: sha.txt exists
+
+- compare sha.txt with the computed sha256 of the current image
+- if equal
+    then:
+        exit
+    else:
+        continue
+
+: new image must be uploaded
+- delete github repo $repo_name from github
+- create new empty github repo, clone
+- compute commit dates array of image
+- compute sha of that image density array
+
+- write sha in sha.txt in repo.
+
+- commit for every date in the dates array
+    - change by touching marker.txt
+    - git commit -m "c: $date" --date $date
+
+- push to github
+- exit
+
+*/
 
 fn main() {
-    let year = 2015;
-    let git_repo = "git-repo";
-    let dot = dotenv().expect("TODO: panic message");
+    // const GITHUB_USERNAME: &str = "JakobHuemer";
+    // const GITHUB_EMAIL: &str = "j.huemer-fistelberger@htblaleonding.onmicrosoft.com";
+    // const SSH_KEYFILE: &str = "jh-id_ed";
 
-    let github_token = dotenv::var("GITHUB_TOKEN").expect("NO GITHUB TOKEN IN ENV");
+    const GITHUB_USERNAME: &str = "JakobFistelberger";
+    const GITHUB_EMAIL: &str = "jakobfistelberger@gmail.com";
+    const SSH_KEYFILE: &str = "jf-id_ed";
 
-    println!("{}", github_token);
+    const REPO_NAME: &str = "green-tiles2";
+    const YEAR: i32 = 2016;
+    const REPO_FOLDER: &str = "git-repo";
+    const IMAGE_PATH: &str = "assets/nextlevel.png";
 
+    let mut repo_manager = RepoManager::new(
+        GITHUB_USERNAME.to_string(),
+        GITHUB_EMAIL.to_string(),
+        REPO_NAME.to_string(),
+        REPO_FOLDER.to_string(),
+        SSH_KEYFILE.to_string(),
+    );
 
+    let pixels: Vec<u8> = convert_image_to_tiles(YEAR, "assets/pixelart.jpg");
 
-    // println!("{}", cmd);
+    println!("{:?}", pixels);
 
-    // cmd are the git commits
+    println!("Now making commits");
 
-
-
+    repo_manager.commit_tiles(YEAR, &pixels);
 }
 
-fn first_weekday_of_year(year: i32) -> i32 {
-    let y = year - 1;
-    ((year + y / 4 - y / 100 + y / 400 + 1) - 1) % 7
-}
+/// Determines if the current image is different from a previous image.
+///
+/// # Returns
+/// - `false` if the previous image is exactly equal to the new image
+/// - `true` for all other cases (different images, no previous image, etc.)
+fn check_previous_image(prev_img_path: &Path, pixels: &Vec<u8>) -> bool {
+    info!("Checking if the image is new");
 
-fn day_to_date(mut year: i32, mut day_number: i32) -> (i32, i32, i32) {
-    let is_leap_year = if (year % 4 == 0 && year % 100 != 0) || year % 400 == 0 { 1 } else { 0 };
-    let month_days = [31, 28 + is_leap_year, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-    let mut total_month_days = 0;
-
-    let mut month: i32 = -1;
-
-    while day_number >= 0 {
-        month = month + 1;
-        if (month % 12 == 0 && month != 0) {
-            year += 1;
-            month = 0;
-        }
-
-        total_month_days += month_days[month as usize];
-        day_number -= month_days[month as usize];
-    }
-
-    let day = month_days[month as usize] + day_number;
-
-    (year, month + 1, day + 1)
-}
-
-fn convert_image_to_tiles(year: i32, path: &str) -> Vec<u8> {
-    let image_name = path;
-    let img = ImageReader::open(image_name).unwrap().decode().unwrap().to_luma8();
-
-
-    if (img.height() != 7 || img.width() >= 50) {
-        panic!("Image dimensions are wrong or too large: w ({}), h ({}) but should be h (7), w (< 50)", img.width(), img.height())
-    }
-
-    let pixel_data: Vec<u8> = img.as_raw().iter().map(|x| ((*x as f64 / 255f64) * 4f64) as u8).collect();
-
-
-    //region log pixel art to
-    let opacities = [" ", ".", "o", "O", "X"];
-
-    //endregion
-
-
-    let is_leap_year = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
-    let days_of_year = if is_leap_year { 366 } else { 365 };
-
-    let date: (i32, i32, i32) = day_to_date(year, 30);
-    let mut green_tiles_data: Vec<u8> = Vec::new();
-
-    let width: i32 = 52;
-    let height: i32 = 7;
-    let offset = first_weekday_of_year(year);
-    let left_margin: i32 = (width - img.width() as i32) / 2;
-
-    println!("offset: {}; lm: {}", offset, left_margin);
-    println!("width: {}; height: {}", img.width(), img.height());
-
-
-    let start_index = (left_margin * height) - offset;
-    let end_index = start_index + img.width() as i32 * height - 1;
-
-    for i in 0..offset {
-        print!("    ");
-    }
-
-    for i in 0..days_of_year {
-        let row = (i - offset + 1) % 7;
-        // let col = i - row;
-
-        if i >= start_index && i <= end_index {
-            let sub_i = i - start_index;
-
-            let image_row = sub_i % height;
-            let image_col = (sub_i - image_row) / height;
-
-            let image_i: usize = (image_row * img.width() as i32 + image_col) as usize;
-
-            green_tiles_data.push(pixel_data[image_i]);
-        } else {
-            green_tiles_data.push(0);
-        }
-    }
-
-
-
-    let mut cmd = "".to_string();
-
-    for (i, color) in green_tiles_data.iter().enumerate() {
-        for c in 0..*color {
-            let date: (i32, i32, i32) = day_to_date(year, i as i32);
-            cmd.push_str(format!("git commit -m '{:0>4}-{:0>2}-{:0>2}__{}' --date {:0>4}-{:0>2}-{:0>2}\n", year, date.1, date.2, i, year, date.1, date.2).as_str());
+    let file = match File::open(&prev_img_path) {
+        Ok(f) => f,
+        Err(_i) => {
+            warn!(
+                "{:?} could not be opened -> ABORTING",
+                prev_img_path.file_name()
+            );
+            return false;
         }
     };
 
-    green_tiles_data
+    let mut prev_img_text = String::new();
+    let mut reader = BufReader::new(file);
+
+    if let Err(_e) = reader.read_line(&mut prev_img_text) {
+        warn!(
+            "{:?} could not be read -> ABORTING",
+            prev_img_path.file_name().unwrap()
+        );
+        return false;
+    };
+
+    let new_image_text = vec_to_str(pixels);
+
+    prev_img_text.eq_ignore_ascii_case(&new_image_text)
+}
+
+fn reset_github_repo(repo_name: &str, github_token: &str) -> Result<(), String> {
+    let run_gh = |args: &[&str]| -> Result<(), String> {
+        Command::new("gh")
+            .env("GITHUB_TOKEN", github_token)
+            .args(args)
+            .output()
+            .map_err(|e| e.to_string())
+            .and_then(|output| {
+                if output.status.success() {
+                    Ok(())
+                } else {
+                    Err(String::from_utf8_lossy(&output.stderr).into_owned())
+                }
+            })
+    };
+
+    run_gh(&["repo", "delete", repo_name, "--yes"])?;
+    sleep(Duration::from_secs(5));
+    run_gh(&["repo", "create", repo_name, "--public", "--confirm"])
+}
+
+fn vec_to_str(vec: &Vec<u8>) -> String {
+    vec.iter()
+        .map(|x2| format!("{}", x2))
+        .reduce(|x, x1| {
+            return format!("{}{}", x, x1);
+        })
+        .unwrap_or_else(|| "".to_string())
 }

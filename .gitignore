@@ -49,3 +49,5 @@ node_modules/
 .vscode
 target
 git-repo
+
+*id_ed*

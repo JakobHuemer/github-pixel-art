@@ -4,7 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-colored = "2.1.0"
-dotenv = "0.15.0"
+colored = "3.0.0"
 image = "0.25.2"
 num-integer = "0.1.46"
+log = "0.4"
+git2 = "0.20.1"
+time = "0.3.41"
+

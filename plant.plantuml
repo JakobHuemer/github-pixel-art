@@ -1,0 +1,67 @@
+
+@startuml
+
+start
+
+if (image exists) then (false)
+    end
+else (true)
+endif
+
+if (not file exists $repo_folder/sha.txt) then (true)
+    :rm -fr $repo_folder
+    clone git@github:$github_username/$repo_name.git;
+endif
+
+:sha.txt exists to check|
+
+:compare sha.txt with the computed sha of the current image;
+
+if (sha.txt == new image sha) then (true)
+    :exit, no changes;
+else (false)
+    :new image must be uploaded;
+endif
+
+:delete github repo $repo_name from github
+create new empty github repo, clone
+compute commit dates array of image;
+
+end
+
+
+'This program gets executed when you want to update the image:
+'
+'start:
+'
+'- if not file exists $repo_folder/sha.txt
+'    then:
+'        rm -fr $repo_folder
+'        clone git@github:$github_username/$repo_name.git
+'
+': sha.txt exists
+'
+'- compare sha.txt with the computed sha256 of the current image
+'- if equal
+'    then:
+'        exit
+'    else:
+'        continue
+'
+': new image must be uploaded
+'- delete github repo $repo_name from github
+'- create new empty github repo, clone
+'- compute commit dates array of image
+'- compute sha of that image density array
+'
+'- write sha in sha.txt in repo.
+'
+'- commit for every date in the dates array
+'    - change by touching marker.txt
+'    - git commit -m "c: $date" --date $date
+'
+'- push to github
+'- exit
+
+
+@enduml
