@@ -1,0 +1,63 @@
+@startuml
+start
+
+:Check if user is signed in;
+
+repeat
+  split
+    :Choose Project;
+    :Chose a Project from the list;
+  split again
+    :Delete Project;
+    :Chose a Project from the list;
+    :confirm>
+  split again
+    :Create new Project;
+    :- enter project name
+      responsive feedback if repo exists
+    - (creating gh and local repo);
+  split again
+    :Open remote Project;
+    - enter project name
+    - clone project if not present
+  split again
+    :exit;
+    end
+  end split
+
+  repeat
+    split
+      :New Image;
+      :Select Image and show preview graph;
+      :Select year;
+      if (year has contributions) then (yes)
+        :Inform user and wait for extra confirmations>
+      endif
+      :Generating commits...>
+      if (push?) then (yes)
+        :Pushing to remote <remote>;
+      endif
+    split again
+      :Delete Image;
+      :Select image to delete;
+      :confirm deletion>
+      :removing commits...;
+      if (push?) then (yes)
+        :Pushing to remote <remote> with force;
+      endif
+    split again
+      :Back to home;
+    split again
+      :Delete project|
+      :confirm deletion>
+      if (also delete GitHub Repo?) then (yes)
+        :delete github repo;
+        :confirm deletion>
+      endif
+      :deleted repo, go back to home;
+    end split
+    :done confirmation>
+  repeat while (in project?)
+repeat while (true)
+
+@enduml

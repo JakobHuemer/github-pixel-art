@@ -1,14 +1,12 @@
-use crate::main;
-use git2::{
-    BranchType, Cred, FetchOptions, IndexAddOption, PushOptions, RemoteCallbacks, Repository,
-    Signature, Time,
-};
-use image::imageops::tile;
-use std::env;
-use std::fmt::format;
-use std::fs::{remove_dir_all, File};
+//! Manages and sets up the repository locally and remotely
+//! used for the commit tiles
+
+mod git;
+mod github;
+
+use git2::{BranchType, Cred, PushOptions, RemoteCallbacks, Repository, Signature, Time};
+use std::fs::remove_dir_all;
 use std::path::Path;
-use std::rc::Rc;
 use time::util::is_leap_year;
 use time::{Date, Month, PrimitiveDateTime};
 

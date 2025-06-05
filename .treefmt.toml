@@ -1,0 +1,28 @@
+[formatter.rust]
+command = "rustfmt"
+options = ["--edition", "2021"]
+includes = ["*.rs"]
+
+[formatter.nix]
+command = "nixpkgs-fmt"
+includes = ["*.nix"]
+
+[formatter.toml]
+command = "taplo"
+options = ["format"]
+includes = ["*.toml"]
+
+[formatter.markdown]
+command = "prettier"
+options = ["--write"]
+includes = ["*.md"]
+
+[formatter.yaml]
+command = "prettier"
+options = ["--write"]
+includes = ["*.yml", "*.yaml"]
+
+[formatter.json]
+command = "prettier"
+options = ["--write"]
+includes = ["*.json"]

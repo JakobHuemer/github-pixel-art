@@ -10,4 +10,6 @@ num-integer = "0.1.46"
 log = "0.4"
 git2 = "0.20.1"
 time = "0.3.41"
-
+graphql_client = "0.14.0"
+inquire = "0.7.5"
+indoc = "2.0.6"

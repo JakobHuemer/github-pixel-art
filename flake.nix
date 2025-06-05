@@ -22,7 +22,7 @@
       overlays = [
         rust-overlay.overlays.default
         (final: prev: {
-          rustToolchain = final.rust-bin.stable.latest.default.override { extensions = [ "rust-src"]; };
+          rustToolchain = final.rust-bin.stable.latest.default.override { extensions = [ "rust-src" ]; };
         })
       ];
 
@@ -31,7 +31,8 @@
       forEachSupportedSystem = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
         pkgs = import nixpkgs { inherit overlays system; };
       });
-    in {
+    in
+    {
       # Schemas tell Nix about the structure of your flake's outputs
       schemas = flake-schemas.schemas;
 
@@ -51,13 +52,16 @@
             cargo
             rustup
             pkg-config
+            treefmt
+            taplo
+            nodePackages.prettier
           ];
 
           # Environment variables
           env = {
             RUST_BACKTRACE = "1";
             RUST_SRC_PATH = "${pkgs.rustToolchain}/lib/rustlib/src/rust/library";
-            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig"; 
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           };
         };
       });
