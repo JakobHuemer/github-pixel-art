@@ -1,14 +1,17 @@
 //! Manages and sets up the repository locally and remotely
 //! used for the commit tiles
 
-mod git;
-mod github;
+// TODO: unprivate, just now for testing
+pub mod git;
+pub mod github;
 
 use git2::{BranchType, Cred, PushOptions, RemoteCallbacks, Repository, Signature, Time};
 use std::fs::remove_dir_all;
 use std::path::Path;
 use time::util::is_leap_year;
 use time::{Date, Month, PrimitiveDateTime};
+
+use crate::repo_manager::github::GitHub;
 
 pub struct RepoManager {
     repo: Repository,

@@ -1,21 +1,34 @@
 @startuml
 start
 
-:Check if user is signed in;
-
 repeat
   split
     :Choose Project;
     :Chose a Project from the list;
-  split again
-    :Delete Project;
-    :Chose a Project from the list;
-    :confirm>
+'  split again
+'    :Delete Project;
+'    :Chose a Project from the list;
+'    :confirm>
   split again
     :Create new Project;
+    split
+      :Offline Mode;
+    split again
+      :Login user;
+      split
+        :Login with a web browser;
+        'https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow
+      split again
+        :Paste an authentication token;
+        'PAT Token
+      split again
+        :Login SSH;
+        'list files to select in ~/.ssh
+      end split
+    end split
     :- enter project name
       responsive feedback if repo exists
-    - (creating gh and local repo);
+    - (creating local repo (if logged in also github));
   split again
     :Open remote Project;
     - enter project name
@@ -26,6 +39,7 @@ repeat
   end split
 
   repeat
+    :Open Project view (offline/online mode);
     split
       :New Image;
       :Select Image and show preview graph;
@@ -37,6 +51,11 @@ repeat
       if (push?) then (yes)
         :Pushing to remote <remote>;
       endif
+    split again
+      :View Images;
+      :print a list of images;
+      :Show github graph of that image;
+      :confirm viewing>
     split again
       :Delete Image;
       :Select image to delete;
