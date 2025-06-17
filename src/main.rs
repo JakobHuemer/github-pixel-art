@@ -20,14 +20,20 @@ async fn main() {
 
                     // use device code flow
 
-                    match builder.with_device().await {
-                        Ok(device_code_builder) => {
-                            println!("Code is: {}", device_code_builder.user_code);
+                    let device_code_builder = builder.with_device().await;
+
+                    match device_code_builder {
+                        Ok(mut code_builder) => {
+                            println!(
+                                "Open {} and enter the code: {}",
+                                code_builder.verification_uri, code_builder.user_code
+                            );
+                            code_builder.wait_for_user().await;
                         }
-                        Err(auth_error) => {
-                            println!("an error occoured: {:?}", auth_error);
+                        Err(err) => {
+                            println!("{:?}", err);
                         }
-                    }
+                    };
                 }
                 HomeOption::OpenProject => {}
                 HomeOption::OpenRemoteProject => {}
@@ -37,7 +43,6 @@ async fn main() {
                 } // open project
             },
             Err(_) => {
-                // println!("Oops! Something happened\n");
                 exit(1);
             }
         };

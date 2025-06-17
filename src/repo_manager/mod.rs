@@ -11,8 +11,6 @@ use std::path::Path;
 use time::util::is_leap_year;
 use time::{Date, Month, PrimitiveDateTime};
 
-use crate::repo_manager::github::GitHub;
-
 pub struct RepoManager {
     repo: Repository,
     repo_name: String,
