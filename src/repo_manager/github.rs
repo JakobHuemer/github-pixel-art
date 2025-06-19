@@ -27,9 +27,7 @@ impl GitHub {
 }
 
 #[derive(Debug)]
-pub struct GitHubAuthBuilder {
-    username: String,
-}
+pub struct GitHubAuthBuilder {}
 
 #[derive(Debug)]
 pub enum GitHubAuthError {
@@ -40,11 +38,11 @@ pub enum GitHubAuthError {
 }
 
 impl GitHubAuthBuilder {
-    pub fn new(username: String) -> GitHubAuthBuilder {
-        GitHubAuthBuilder { username: username }
+    pub fn new() -> GitHubAuthBuilder {
+        GitHubAuthBuilder {}
     }
 
-    pub async fn with_pat(&self, token: String) -> Result<GitHub, GitHubAuthError> {
+    pub async fn with_pat(&self, token: String) -> Result<GitHubAuthMethod, GitHubAuthError> {
         let client = Client::new();
 
         let res = client
@@ -56,16 +54,13 @@ impl GitHubAuthBuilder {
             .map_err(|_e| GitHubAuthError::PATInvalid)?;
 
         match res.status() == StatusCode::OK {
-            true => Ok(GitHub {
-                username: self.username.clone(),
-                auth: GitHubAuthMethod::PersonalAccessToken { token: token },
-            }),
+            true => Ok(GitHubAuthMethod::PersonalAccessToken { token: token }),
             false => Err(GitHubAuthError::Unknown(192)),
         }
     }
 
     pub async fn with_device(&self) -> Result<GitHubDeviceCodeBuilder, GitHubAuthError> {
-        Ok(GitHubDeviceCodeBuilder::new(self.username.clone()).await?)
+        Ok(GitHubDeviceCodeBuilder::new().await?)
     }
 }
 
@@ -73,23 +68,12 @@ impl GitHubAuthBuilder {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GitHubDeviceCodeBuilder {
-    pub username: Option<String>,
     pub device_code: String,
     pub user_code: String,
     pub verification_uri: String,
     pub expires_in: u32,
     pub interval: u32,
     pub expiration_date: Option<chrono::DateTime<chrono::Utc>>,
-}
-
-impl Display for GitHubDeviceCodeBuilder {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Device Code: {}, User Code: {}, Verification URI: {}",
-            self.device_code, self.user_code, self.verification_uri
-        )
-    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -134,7 +118,7 @@ pub enum GitHubDeviceCodePollerror {
 }
 
 impl GitHubDeviceCodeBuilder {
-    pub async fn new(username: String) -> Result<GitHubDeviceCodeBuilder, GitHubAuthError> {
+    pub async fn new() -> Result<GitHubDeviceCodeBuilder, GitHubAuthError> {
         let client = Client::new();
 
         let res = client
@@ -158,15 +142,13 @@ impl GitHubDeviceCodeBuilder {
             .await
             .map_err(|_e| GitHubAuthError::Unknown(103))?;
 
-        code_response.username = Some(username);
-
         code_response.expiration_date =
             Some(chrono::Utc::now() + chrono::Duration::seconds(code_response.expires_in as i64));
 
         Ok(code_response)
     }
 
-    pub async fn wait_for_user(&mut self) -> Result<GitHub, GitHubAuthError> {
+    pub async fn wait_for_user(&mut self) -> Result<GitHubAuthMethod, GitHubAuthError> {
         let client = Client::new();
 
         while chrono::Utc::now() < self.expiration_date.unwrap() {
@@ -192,12 +174,9 @@ impl GitHubDeviceCodeBuilder {
                 match data {
                     GitHubDeviceCodePollResponse::Success(res) => {
                         println!("Access Token: {}", res.access_token);
-                        return Ok(GitHub::new(
-                            self.username.clone().unwrap(),
-                            GitHubAuthMethod::DeviceAuth {
-                                access_token: res.access_token,
-                            },
-                        ));
+                        return Ok(GitHubAuthMethod::DeviceAuth {
+                            access_token: res.access_token,
+                        });
                     }
                     GitHubDeviceCodePollResponse::Error(e) => {
                         match e.error {
